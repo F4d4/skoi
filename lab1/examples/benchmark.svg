@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="430" viewBox="0 0 680 430" role="img" aria-label="Время обработки для ядер 3, 5 и 7 пикселей">
+  <rect width="680" height="430" fill="#ffffff"/>
+  <text x="340" y="31" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" font-weight="bold" fill="#202a35">Время фильтрации по размеру ядра</text>
+  <text x="80" y="66" font-family="Arial, sans-serif" font-size="15" fill="#38495b">Ручная реализация, мс</text>
+  <line x1="80" y1="216" x2="610" y2="216" stroke="#a7b2be"/>
+  <line x1="80" y1="76" x2="80" y2="216" stroke="#a7b2be"/>
+  <line x1="80" y1="146" x2="610" y2="146" stroke="#e2e7eb"/>
+  <text x="69" y="220" text-anchor="end" font-family="Arial, sans-serif" font-size="12" fill="#657586">0</text>
+  <text x="69" y="150" text-anchor="end" font-family="Arial, sans-serif" font-size="12" fill="#657586">90</text>
+  <text x="69" y="80" text-anchor="end" font-family="Arial, sans-serif" font-size="12" fill="#657586">180</text>
+  <rect x="132" y="149.3" width="66" height="66.7" fill="#e87b52"/>
+  <rect x="307" y="120.1" width="66" height="95.9" fill="#e87b52"/>
+  <rect x="482" y="90.2" width="66" height="125.8" fill="#e87b52"/>
+  <text x="165" y="143" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#38495b">85.7</text>
+  <text x="340" y="114" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#38495b">123.3</text>
+  <text x="515" y="84" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#38495b">161.7</text>
+  <text x="80" y="270" font-family="Arial, sans-serif" font-size="15" fill="#38495b">NumPy, мс</text>
+  <line x1="80" y1="377" x2="610" y2="377" stroke="#a7b2be"/>
+  <line x1="80" y1="290" x2="80" y2="377" stroke="#a7b2be"/>
+  <line x1="80" y1="307.4" x2="610" y2="307.4" stroke="#e2e7eb"/>
+  <text x="69" y="381" text-anchor="end" font-family="Arial, sans-serif" font-size="12" fill="#657586">0</text>
+  <text x="69" y="311" text-anchor="end" font-family="Arial, sans-serif" font-size="12" fill="#657586">4</text>
+  <rect x="132" y="314.3" width="66" height="62.7" fill="#3d91c9"/>
+  <rect x="307" y="311.1" width="66" height="65.9" fill="#3d91c9"/>
+  <rect x="482" y="306.4" width="66" height="70.6" fill="#3d91c9"/>
+  <text x="165" y="306" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#38495b">3.61</text>
+  <text x="340" y="303" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#38495b">3.79</text>
+  <text x="515" y="298" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#38495b">4.06</text>
+  <text x="165" y="401" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#38495b">3 × 3</text>
+  <text x="340" y="401" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#38495b">5 × 5</text>
+  <text x="515" y="401" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#38495b">7 × 7</text>
+  <text x="340" y="423" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#657586">Размер ядра</text>
+</svg>
