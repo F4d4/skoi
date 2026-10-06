@@ -24,10 +24,67 @@ python main.py examples/input.png --kernel-size 5 --sigma 1.2 --repeats 5
 
 ## 2. Разработанная система
 
-- `gaussian_kernel` строит одинаковые нормированные веса для обеих реализаций.
-- `blur_numpy` вызывает готовую функцию свёртки `numpy.convolve` для строк и столбцов изображения.
-- `blur_python` выполняет те же два прохода обычными циклами Python.
-- `main` загружает изображение, проверяет параметры, измеряет время и сохраняет обе версии результата.
+### `gaussian_kernel`: веса фильтра
+
+Функция вычисляет веса по размеру ядра и σ, затем делит каждый вес на их общую сумму. Полученное ядро используется в обеих реализациях.
+
+```python
+def gaussian_kernel(size, sigma):
+    radius = size // 2
+    weights = []
+    for offset in range(-radius, radius + 1):
+        distance = abs(offset) / sigma
+        weights.append(0.0 if distance > 40 else math.exp(-0.5 * distance * distance))
+    total = sum(weights)
+    return [weight / total for weight in weights]
+```
+
+### `blur_numpy`: библиотечная обработка
+
+NumPy дополняет края ближайшими пикселями и применяет готовую функцию `convolve` сначала к строкам, затем к столбцам. После двух проходов значения округляются и приводятся к диапазону RGB.
+
+```python
+padded = np.pad(image, ((0, 0), (radius, radius), (0, 0)), mode="edge")
+horizontal = np.apply_along_axis(lambda line: np.convolve(line, kernel, mode="valid"), 1, padded)
+
+padded = np.pad(horizontal, ((radius, radius), (0, 0), (0, 0)), mode="edge")
+vertical = np.apply_along_axis(lambda line: np.convolve(line, kernel, mode="valid"), 0, padded)
+```
+
+### `blur_python`: ручная обработка
+
+Здесь те же два прохода выполняются циклами. В горизонтальном проходе для каждого соседнего пикселя берётся его цвет и умножается на соответствующий вес. Во втором проходе аналогично обрабатываются соседние строки. Выражение `min(max(...))` удерживает координату внутри изображения.
+
+```python
+source_x = min(max(x + index - radius, 0), width - 1)
+source = pixels[y * width + source_x]
+for channel in range(3):
+    horizontal[y][x][channel] += source[channel] * weight
+```
+
+### `measure` и `main`: сравнение результатов
+
+`measure` запускает переданную функцию несколько раз и возвращает результат последнего запуска и медианное время.
+
+```python
+def measure(function, repeats):
+    times = []
+    result = None
+    for _ in range(repeats):
+        start = time.perf_counter()
+        result = function()
+        times.append(time.perf_counter() - start)
+    return result, statistics.median(times)
+```
+
+В `main` одна и та же функция измерения вызывается для двух вариантов фильтра.
+
+```python
+numpy_result, numpy_time = measure(lambda: blur_numpy(array, kernel), args.repeats)
+python_result, python_time = measure(lambda: blur_python(pixels, width, height, kernel), args.repeats)
+```
+
+Затем `main` сохраняет оба изображения, сравнивает их по пикселям и выводит время и ускорение.
 
 Время чтения файла, подготовки входных данных и записи PNG не включено в замеры: сравнивается только работа фильтра. Входное изображение приводится к RGB.
 
@@ -45,7 +102,7 @@ python main.py examples/input.png --kernel-size 5 --sigma 1.2 --repeats 5
 | --- | --- | --- |
 | ![Ядро 3 на 3](examples/size3/gaussian_numpy.png) | ![Ядро 7 на 7](examples/size7/gaussian_numpy.png) | ![Сигма 2](examples/sigma2/gaussian_numpy.png) |
 
-Замеры выполнены 4 октября 2026 года на Windows, Python 3.12.14, NumPy 2.3.5 и Pillow 12.3.0. Для каждого размера ядра алгоритм запускался 9 раз; в таблице приведена медиана. Изображение и σ = 1.2 во всех трёх строках одинаковы.
+Замеры выполнены 6 октября 2026 года на Windows, Python 3.12.14, NumPy 2.3.5 и Pillow 12.3.0. Для каждого размера ядра алгоритм запускался 9 раз; в таблице приведена медиана. Изображение и σ = 1.2 во всех трёх строках одинаковы.
 
 | Ядро | NumPy, мс | Python, мс | Ускорение NumPy | Максимальная разница каналов |
 | --- | ---: | ---: | ---: | ---: |
