@@ -54,6 +54,71 @@ python tracker.py path/to/my_video.mp4 --roi 80 40 350 240 --label "Book"
 
 В коде `PlanarTracker` отвечает за поиск и сопровождение, `process_video` — за чтение и запись ролика, `main` — за параметры командной строки. Код не зависит от имени файла: на видео с другим объектом достаточно задать его путь и при необходимости `--roi`.
 
+### Основные фрагменты кода
+
+**Подготовка эталона.** Из первого кадра берётся весь объект или область `--roi`. SIFT один раз вычисляет точки и дескрипторы, с которыми потом сравниваются кадры видео:
+
+```python
+self.template = gray[y:y + h, x:x + w]
+self.corners = np.float32([[x, y], [x + w - 1, y],
+                           [x + w - 1, y + h - 1], [x, y + h - 1]])
+self.sift = cv2.SIFT_create(nfeatures=3000, contrastThreshold=0.015)
+self.ref_keys, self.ref_desc = self.sift.detectAndCompute(self.template, None)
+```
+
+**Повторный поиск объекта.** Два ближайших совпадения проходят тест Лоу; затем одно и то же место кадра не допускается в несколько пар. RANSAC оставляет согласованные пары, а гомография переносит углы эталона на текущий кадр:
+
+```python
+pairs = self.matcher.knnMatch(self.ref_desc, desc, k=2)
+good = sorted((a for pair in pairs if len(pair) == 2
+               for a, b in [pair] if a.distance < 0.75 * b.distance),
+              key=lambda match: match.distance)
+unique, used = [], set()
+for match in good:
+    if match.trainIdx not in used:
+        unique.append(match)
+        used.add(match.trainIdx)
+source = np.float32([self.ref_keys[m.queryIdx].pt for m in unique]).reshape(-1, 1, 2)
+target = np.float32([keys[m.trainIdx].pt for m in unique]).reshape(-1, 1, 2)
+matrix, inliers = cv2.findHomography(source, target, cv2.RANSAC, 4.0)
+local_corners = self.corners - self.corners[0]
+polygon = cv2.perspectiveTransform(local_corners.reshape(-1, 1, 2), matrix).reshape(-1, 2)
+```
+
+Здесь показаны основные строки метода `_detect`; проверки числа совпадений, инлаеров и формы рамки находятся в полном коде.
+
+**Сопровождение между поисками.** Оптический поток переносит точки вперёд и обратно. Точки с большой ошибкой обратного хода исключаются, после чего находится движение рамки между соседними кадрами:
+
+```python
+moved, forward, _ = cv2.calcOpticalFlowPyrLK(self.previous, gray, self.points, None, **options)
+back, backward, _ = cv2.calcOpticalFlowPyrLK(gray, self.previous, moved, None, **options)
+keep = ((forward.ravel() == 1) & (backward.ravel() == 1)
+        & (np.linalg.norm(back - self.points, axis=2).ravel() < 1.5))
+old, new = self.points[keep], moved[keep]
+matrix, inliers = cv2.findHomography(old, new, cv2.RANSAC, 3.0)
+polygon = cv2.perspectiveTransform(self.polygon.reshape(-1, 1, 2), matrix).reshape(-1, 2)
+```
+
+Это ключевые строки метода `_flow`; проверки на отсутствие точек и на неудачную гомографию для краткости опущены.
+
+**Выбор результата.** Обычно используется оптический поток. Каждые пять кадров или после его потери запускается поиск SIFT; при успешном поиске он обновляет рамку и точки для следующего кадра:
+
+```python
+flow_polygon, flow_points = self._flow(gray)
+detected = self._detect(gray) if self.frame_number % 5 == 0 or flow_polygon is None else None
+if detected is not None:
+    self.polygon = detected
+    self.points = self._new_points(gray, detected)
+elif flow_polygon is not None:
+    self.polygon = flow_polygon
+    self.points = flow_points
+else:
+    self.polygon = None
+    self.points = None
+```
+
+В полном методе `update` точки также периодически пополняются. Если рамка найдена, `process_video` рисует её через `cv2.polylines`, добавляет подпись через `cv2.putText` и записывает кадр в выходной файл.
+
 ## 3. Результаты и тестирование
 
 Проверены все три входных варианта из `test-videos/test-videos/`. Каждый содержит 558 кадров размером 640×360. На контрольных кадрах рамка располагается вдоль изображения картины и поворачивается вместе с ним.
